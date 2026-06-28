@@ -12,6 +12,11 @@ interface Musica {
   [key: string]: string | undefined;
 }
 
+const removerAcentos = (texto: string) => {
+  if (!texto) return '';
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+}
+
 export function App() {
   const [musicas, setMusicas] = useState<Musica[]>([])
   const [busca, setBusca] = useState<string>('')
@@ -63,13 +68,24 @@ export function App() {
 
   // Aplica o filtro de busca
   const musicasFiltradas = useMemo(() => {
-    const termoBusca = busca.toLowerCase()
-    return musicas.filter(m =>
-      m.id?.includes(termoBusca) ||
-      m.artista?.toLowerCase().includes(termoBusca) ||
-      m.musica?.toLowerCase().includes(termoBusca) ||
-      m.inicio?.toLowerCase().includes(termoBusca)
-    )
+    // 1. Remove os acentos e deixa minúsculo o termo digitado
+    const termoBusca = removerAcentos(busca.toLowerCase())
+    
+    return musicas.filter(m => {
+      // 2. Trata cada campo com segurança e remove os acentos
+      const id = m.id || ''
+      const artista = removerAcentos((m.artista || '').toLowerCase())
+      const musica = removerAcentos((m.musica || '').toLowerCase())
+      const inicio = removerAcentos((m.inicio || '').toLowerCase())
+
+      // 3. Compara as strings limpas
+      return (
+        id.includes(termoBusca) ||
+        artista.includes(termoBusca) ||
+        musica.includes(termoBusca) ||
+        inicio.includes(termoBusca)
+      )
+    })
   }, [busca, musicas])
 
   // NOVO: Separa apenas a quantidade de músicas que queremos desenhar na tela
